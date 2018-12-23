@@ -1,34 +1,86 @@
+const getWeb3 = async () => {
+    // Modern dapp browsers...
+    if (window.ethereum) {
+      console.log('ETHEREUM PRESENT');
+      const web3 = new Web3(window.ethereum);
+      try {
+        // Request account access if needed
+        await window.ethereum.enable();
+        // Acccounts now exposed
+        return web3;
+      } catch (error) {
+        throw (error);
+      }
+    }
+    // Legacy dapp browsers...
+    else if (window.web3) {
+      // Use Mist/MetaMask's provider.
+      const web3 = window.web3;
+      console.log("Injected web3 detected.");
+      return web3;
+    }
+    // Fallback to localhost; use dev console port by default...
+    else {
+      const provider = new Web3.providers.HttpProvider(
+        "http://127.0.0.1:7545"
+      );
+      const web3 = new Web3(provider);
+      console.log("No web3 instance injected, using Local web3.");
+      return web3;
+    }
+};
+
 App = {
+
      web3Provider: null,
      contracts: {},
+     account: 0x0,
 
      init: function() {
-          //load articlesRow
-          const articleRow = $('#articlesRow');
-          const articleTemplate = $('#articleTemplate');
-          articleTemplate.find('.pane-title').text('article 1');
-          articleTemplate.find('.article-description').text('Description for article 1');
-          articleTemplate.find('.article-price').text("10.23");
-          articleTemplate.find('.article-seller').text('0x1234568901234567890');
-
-          articleRow.append(articleTemplate.html());
+         
 
           return App.initWeb3();
      },
 
-     initWeb3: function() {
-          /*
-           * Replace me...
-           */
+     initWeb3: async function() {
+          // initialize web3
+          web3 = await getWeb3();
+          App.web3Provider = web3;
+
+          App.displayAccountInfo();
 
           return App.initContract();
      },
 
-     initContract: function() {
-          /*
-           * Replace me...
-           */
+     displayAccountInfo:  function() {
+          //console.log("WEB3", web3);
+          web3.eth.getCoinbase(  (err, account) => {
+               //console.log('ACCOUNT', account);  
+               $('#account').text(account);             
+               web3.eth.getBalance(account, function(err, balance) {
+                    if (err === null) {
+                         $('#accountBalance').text(`${web3.fromWei(balance.toString(), 'ether')} ETH`);
+                    } else {
+                         console.log("ERROR", err);
+                    }
+               })
+          });                  
      },
+
+     initContract: function() {
+          $.getJSON('ChainList.json', function(chainListArtifact) {
+               // get contract artificat and use it to instantiate a truffle contract abstraction
+               App.contracts.ChainList = TruffleContract(chainListArtifact);
+               // set the contract providers
+               App.contracts.ChainList.setProvider(App.web3Provider);
+               //retrieve the article from the contract;
+               return App.reloadArticles();
+          });
+     },
+
+     reloadArticles: function() {
+
+     }
 };
 
 $(function() {
