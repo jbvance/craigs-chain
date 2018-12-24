@@ -5,7 +5,7 @@ contract ChainList {
     address seller;
     string name;
     string description;
-    uint256 price;
+    uint256 price;    
 
     // sell an article
     function sellArticle(string memory _name, string memory _description, uint256 _price) public {
